@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS students (
   kelas       VARCHAR(50)  NOT NULL,
   prodi       VARCHAR(100) NOT NULL,
   photo       LONGTEXT,
-  descriptors LONGTEXT     NOT NULL DEFAULT '[]',
+  descriptors LONGTEXT     NOT NULL,
   created_at  DATETIME     DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """)
