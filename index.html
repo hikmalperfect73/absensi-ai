@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sistem Absensi Mahasiswa</title>
 <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
 
@@ -380,6 +381,50 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
   .stats-row { gap: 10px; }
   .tab-btn { padding: 12px 14px; font-size: 0.78rem; gap: 5px; }
 }
+
+/* ── SWEETALERT2 OVERRIDE ── */
+.swal2-popup {
+  font-family: 'DM Sans', sans-serif !important;
+  border-radius: 14px !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+.swal2-title {
+  font-family: 'Instrument Serif', serif !important;
+  font-size: 1.3rem !important;
+  letter-spacing: -0.01em !important;
+  color: var(--ink) !important;
+}
+.swal2-html-container {
+  font-size: 0.85rem !important;
+  color: var(--ink2) !important;
+}
+.swal2-confirm {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  padding: 9px 20px !important;
+}
+.swal2-cancel {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  padding: 9px 20px !important;
+  border: 1px solid var(--border2) !important;
+  background: transparent !important;
+  color: var(--ink) !important;
+}
+.swal2-cancel:hover { background: var(--bg) !important; }
+.swal2-input {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.9rem !important;
+  border: 1px solid var(--border2) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+}
+.swal2-input:focus { border-color: var(--accent) !important; box-shadow: none !important; }
 </style>
 </head>
 <body>
@@ -503,7 +548,6 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
         <span class="card-title">Form Registrasi Mahasiswa</span>
       </div>
       <div class="card-body">
-        <div id="regAlert" class="alert"></div>
         <div class="form-group">
           <label>Nama Lengkap</label>
           <input type="text" id="regNama" placeholder="Contoh: Budi Santoso">
@@ -795,11 +839,16 @@ async function startRegCamera() {
     document.getElementById('regCapStatus').textContent = 'Kamera aktif — posisikan wajah di lingkaran';
     document.getElementById('btnCapture').disabled = false;
     document.getElementById('btnRegCam').textContent = '🔴 Kamera Aktif';
-  } catch(e) { alert('Tidak bisa akses kamera: ' + e.message); }
+  } catch(e) {
+    Swal.fire({ icon: 'error', title: 'Kamera Tidak Tersedia', text: e.message, confirmButtonColor: '#2563eb' });
+  }
 }
 
 async function capturePhoto() {
-  if (!modelsLoaded) { alert('Model AI belum siap, tunggu sebentar!'); return; }
+  if (!modelsLoaded) {
+    Swal.fire({ icon: 'info', title: 'Model Belum Siap', text: 'Tunggu beberapa detik hingga model AI selesai dimuat.', confirmButtonColor: '#2563eb' });
+    return;
+  }
   if (capturedPhotos.length >= 5) return;
 
   const video = document.getElementById('regVideo');
@@ -913,7 +962,10 @@ function resetRegForm() {
 // ABSENSI KAMERA
 // ═══════════════════════════════════════════
 async function startAbsCamera() {
-  if (!modelsLoaded) { alert('Model AI belum siap!'); return; }
+  if (!modelsLoaded) {
+    Swal.fire({ icon: 'info', title: 'Model Belum Siap', text: 'Tunggu beberapa detik hingga model AI selesai dimuat.', confirmButtonColor: '#2563eb' });
+    return;
+  }
   try {
     absStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
     const video = document.getElementById('absVideo');
@@ -928,7 +980,9 @@ async function startAbsCamera() {
     document.getElementById('camStatus').textContent = 'Mendeteksi...';
     absDetecting = true;
     video.addEventListener('loadedmetadata', () => detectLoop(), { once: true });
-  } catch(e) { alert('Tidak bisa akses kamera: ' + e.message); }
+  } catch(e) {
+    Swal.fire({ icon: 'error', title: 'Kamera Tidak Tersedia', text: e.message, confirmButtonColor: '#2563eb' });
+  }
 }
 
 function stopAbsCamera() {
@@ -1127,15 +1181,27 @@ function renderAttendanceList() {
 }
 
 async function clearAttendance() {
-  if (!confirm('Reset data kehadiran hari ini?')) return;
+  const konfirmReset = await Swal.fire({
+    title: 'Reset Kehadiran?',
+    html: 'Data kehadiran hari ini akan dihapus.<br>Tindakan ini <strong>tidak bisa dibatalkan</strong>.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: '🗑 Ya, Reset',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#dc2626',
+  });
+  if (!konfirmReset.isConfirmed) return;
   try {
     const result = await apiFetch('/api/attendance', { method: 'DELETE' });
     if (result.success) {
       await loadAttendanceFromAPI();
       updateStats();
       renderAttendanceList();
+      Swal.fire({ icon: 'success', title: 'Berhasil Direset', text: 'Data kehadiran hari ini telah dihapus.', timer: 2000, timerProgressBar: true, showConfirmButton: false });
     }
-  } catch(e) { alert('Gagal reset: ' + e.message); }
+  } catch(e) {
+    Swal.fire({ icon: 'error', title: 'Gagal Reset', text: e.message, confirmButtonColor: '#2563eb' });
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1169,7 +1235,16 @@ async function renderStudentTable() {
 }
 
 async function deleteStudent(id) {
-  if (!confirm('Hapus mahasiswa ini?')) return;
+  const konfirmHapus = await Swal.fire({
+    title: 'Hapus Mahasiswa?',
+    text: 'Data mahasiswa ini akan dihapus permanen.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: '🗑 Hapus',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#dc2626',
+  });
+  if (!konfirmHapus.isConfirmed) return;
   try {
     const result = await apiFetch(`/api/students?id=${id}`, { method: 'DELETE' });
     if (result.success) {
@@ -1177,21 +1252,46 @@ async function deleteStudent(id) {
       renderStudentTable();
       updateStats();
     } else {
-      alert(result.message);
+      Swal.fire({ icon: 'error', title: 'Gagal', text: result.message, confirmButtonColor: '#2563eb' });
     }
-  } catch(e) { alert('Gagal hapus: ' + e.message); }
+  } catch(e) {
+    Swal.fire({ icon: 'error', title: 'Gagal Hapus', text: e.message, confirmButtonColor: '#2563eb' });
+  }
 }
 
 async function clearAllStudents() {
-  if (!confirm('Hapus SEMUA data mahasiswa? Tindakan ini tidak bisa dibatalkan!')) return;
+  // Step 1: konfirmasi
+  const konfirmAll = await Swal.fire({
+    title: 'Hapus Semua Mahasiswa?',
+    html: '<span style="color:#dc2626;font-weight:600">Semua data mahasiswa akan terhapus permanen.</span><br><br>Masukkan password admin untuk melanjutkan.',
+    icon: 'warning',
+    input: 'password',
+    inputPlaceholder: 'Password admin',
+    inputAttributes: { autocomplete: 'current-password' },
+    showCancelButton: true,
+    confirmButtonText: '🗑 Hapus Semua',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#dc2626',
+    preConfirm: (pw) => {
+      if (pw !== 'admin123') {
+        Swal.showValidationMessage('Password salah!');
+        return false;
+      }
+      return true;
+    }
+  });
+  if (!konfirmAll.isConfirmed) return;
   try {
     const result = await apiFetch('/api/students', { method: 'DELETE' });
     if (result.success) {
       await loadStudentsFromAPI();
       renderStudentTable();
       updateStats();
+      Swal.fire({ icon: 'success', title: 'Semua Data Dihapus', text: 'Seluruh data mahasiswa berhasil dihapus.', timer: 2000, timerProgressBar: true, showConfirmButton: false });
     }
-  } catch(e) { alert('Gagal hapus semua: ' + e.message); }
+  } catch(e) {
+    Swal.fire({ icon: 'error', title: 'Gagal', text: e.message, confirmButtonColor: '#2563eb' });
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1238,7 +1338,10 @@ async function updateStats() {
 // EXPORT CSV
 // ═══════════════════════════════════════════
 function exportCSV() {
-  if (attendance.length === 0) { alert('Tidak ada data kehadiran hari ini!'); return; }
+  if (attendance.length === 0) {
+    Swal.fire({ icon: 'info', title: 'Tidak Ada Data', text: 'Belum ada kehadiran hari ini.', confirmButtonColor: '#2563eb' });
+    return;
+  }
   const rows = [['No','Nama','NIM','Kelas','Program Studi','Waktu Hadir','Status']];
   attendance.forEach((a, i) => {
     const time = new Date(a.time).toLocaleString('id-ID');
@@ -1278,10 +1381,19 @@ function deletePhoto(idx) {
 }
 
 function showAlert(id, type, msg) {
-  const el = document.getElementById(id);
-  el.className = `alert alert-${type} show`;
-  el.textContent = msg;
-  setTimeout(() => el.className = 'alert', 3500);
+  // id diabaikan, semua pakai SweetAlert2
+  const iconMap = { success: 'success', error: 'error', info: 'info' };
+  Swal.fire({
+    icon: iconMap[type] || 'info',
+    title: type === 'success' ? 'Berhasil' : type === 'error' ? 'Gagal' : 'Info',
+    html: msg,
+    timer: type === 'success' ? 2500 : undefined,
+    timerProgressBar: type === 'success',
+    showConfirmButton: type !== 'success',
+    confirmButtonColor: '#2563eb',
+    toast: type === 'success',
+    position: type === 'success' ? 'top-end' : 'center',
+  });
 }
 
 // ═══════════════════════════════════════════
