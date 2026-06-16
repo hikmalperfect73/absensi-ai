@@ -518,7 +518,7 @@ async function loadModels() {
   label.textContent = 'Memuat model...';
   try {
     await Promise.all([
-      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
       faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
       faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
     ]);
@@ -561,7 +561,7 @@ async function capturePhoto() {
   canvas.getContext('2d').drawImage(video, 0, 0);
 
   const detection = await faceapi
-    .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 }))
+    .detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }))
     .withFaceLandmarks()
     .withFaceDescriptor();
 
@@ -710,7 +710,7 @@ async function detectLoop() {
   const ctx = canvas.getContext('2d');
 
   const detections = await faceapi
-    .detectAllFaces(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.6 }))
+    .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
     .withFaceLandmarks()
     .withFaceDescriptors();
 
