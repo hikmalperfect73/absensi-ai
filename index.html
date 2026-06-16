@@ -47,6 +47,7 @@ body::before {
 
 .app { position: relative; z-index: 1; }
 
+/* ── HEADER ── */
 header {
   background: var(--card);
   border-bottom: 1px solid var(--border);
@@ -54,29 +55,82 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 64px;
+  min-height: 64px;
   position: sticky;
   top: 0;
   z-index: 200;
   box-shadow: 0 1px 0 var(--border);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .brand { display: flex; align-items: center; gap: 12px; }
-.brand-icon { width: 36px; height: 36px; background: var(--ink); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--bg); font-size: 1rem; }
+.brand-icon { width: 36px; height: 36px; background: var(--ink); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--bg); font-size: 1rem; flex-shrink: 0; }
 .brand-name { font-family: 'Instrument Serif', serif; font-size: 1.25rem; letter-spacing: -0.01em; }
 .brand-sub { font-size: 0.7rem; color: var(--ink2); font-weight: 300; }
-.header-right { display: flex; align-items: center; gap: 16px; }
-.time-display { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--ink2); text-align: right; }
 
-.model-badge { display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border2); font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--ink2); }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.time-display {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--ink2);
+  text-align: right;
+}
+
+.model-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  font-size: 0.7rem;
+  font-family: 'DM Mono', monospace;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
 .model-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); }
 .model-badge .dot.ready { background: var(--green); box-shadow: 0 0 0 2px var(--green-light); }
 .model-badge .dot.loading { background: var(--amber); animation: blink 1s infinite; }
 
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-.nav-tabs { display: flex; gap: 0; padding: 0 32px; background: var(--card); border-bottom: 1px solid var(--border); }
-.tab-btn { padding: 14px 20px; font-size: 0.82rem; font-weight: 500; color: var(--ink2); border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 7px; }
+/* ── NAV TABS: horizontal scroll di mobile ── */
+.nav-tabs {
+  display: flex;
+  padding: 0 32px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  padding: 14px 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink2);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .tab-btn:hover { color: var(--ink); }
 .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
@@ -89,17 +143,47 @@ header {
 .card-title { font-family: 'Instrument Serif', serif; font-size: 1.1rem; letter-spacing: -0.01em; }
 .card-body { padding: 24px; }
 
-.absensi-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
+/* ── ABSENSI LAYOUT ── */
+.absensi-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ── VIDEO: tidak distorsi, aspect ratio terjaga ── */
 .video-card { overflow: hidden; }
-.video-wrap { position: relative; aspect-ratio: 4/3; background: #0a0a0f; overflow: hidden; }
-video, canvas.overlay { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.video-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #0a0a0f;
+  overflow: hidden;
+}
+
+video, canvas.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 canvas.overlay { pointer-events: none; }
+
 .video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #444; font-size: 0.75rem; }
 .video-placeholder .icon { font-size: 3rem; opacity: 0.4; }
 .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #2563eb, transparent); animation: scanMove 2.5s ease-in-out infinite; opacity: 0; }
 .scanning .scan-line { opacity: 1; }
 @keyframes scanMove { 0% { top: 10%; } 50% { top: 90%; } 100% { top: 10%; } }
-.cam-controls { padding: 16px 20px; display: flex; gap: 10px; border-top: 1px solid var(--border); }
+
+.cam-controls {
+  padding: 16px 20px;
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
 
 .result-panel { display: flex; flex-direction: column; gap: 16px; }
 .detected-card { padding: 20px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); transition: all 0.3s; }
@@ -125,18 +209,35 @@ canvas.overlay { pointer-events: none; }
 .att-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.65rem; font-weight: 600; background: var(--green); color: #fff; }
 .empty-state { text-align: center; padding: 32px; color: var(--ink2); font-size: 0.82rem; }
 
+/* ── REGISTRASI ── */
 .reg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .form-group { margin-bottom: 16px; }
 label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--ink2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; font-family: 'DM Mono', monospace; }
 input, select { width: 100%; padding: 10px 14px; border: 1px solid var(--border2); border-radius: 8px; font-size: 0.88rem; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); transition: border-color 0.15s; outline: none; }
 input:focus, select:focus { border-color: var(--accent); background: #fff; }
 
-.capture-wrap { position: relative; aspect-ratio: 4/3; background: #0a0a0f; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
-.capture-wrap video, .capture-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.capture-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #0a0a0f;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.capture-wrap video, .capture-wrap canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .face-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 180px; height: 220px; border: 2px dashed rgba(255,255,255,0.2); border-radius: 50%; pointer-events: none; }
 .capture-status { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px; background: rgba(0,0,0,0.7); color: #fff; font-size: 0.72rem; text-align: center; font-family: 'DM Mono', monospace; }
 
-.students-table { width: 100%; border-collapse: collapse; }
+/* ── TABLE: horizontal scroll wrapper ── */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.students-table { width: 100%; border-collapse: collapse; min-width: 600px; }
 .students-table th { text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink2); font-family: 'DM Mono', monospace; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg); font-weight: 500; }
 .students-table td { padding: 14px 16px; font-size: 0.85rem; border-bottom: 1px solid var(--border); }
 .students-table tr:last-child td { border-bottom: none; }
@@ -160,7 +261,14 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
 .btn-danger:hover { background: #b91c1c; }
 .btn-sm { padding: 5px 12px; font-size: 0.75rem; }
 
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+/* ── STATS: 2×2 di mobile, 4×1 di desktop ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
 .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; box-shadow: var(--shadow); }
 .stat-box-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink2); font-family: 'DM Mono', monospace; margin-bottom: 8px; }
 .stat-box-value { font-family: 'Instrument Serif', serif; font-size: 2rem; letter-spacing: -0.03em; line-height: 1; }
@@ -173,14 +281,7 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
 .alert-success { background: var(--green-light); color: var(--green); border: 1px solid #bbf7d0; }
 .alert-error { background: var(--red-light); color: var(--red); border: 1px solid #fecaca; }
 
-.export-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-
-@media (max-width: 768px) {
-  .absensi-grid, .reg-grid, .stats-row { grid-template-columns: 1fr; }
-  header { padding: 0 16px; }
-  .nav-tabs { padding: 0 16px; }
-  .container { padding: 20px 16px; }
-}
+.export-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
 
 .divider { height: 1px; background: var(--border); margin: 20px 0; }
 
@@ -194,6 +295,56 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
 
 .loading-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .absensi-grid {
+    grid-template-columns: 1fr;
+  }
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    padding: 10px 16px;
+    min-height: auto;
+  }
+  .nav-tabs { padding: 0 16px; }
+  .container { padding: 16px 12px; }
+
+  /* Header right: sembunyikan jam di layar sangat kecil */
+  .time-display { display: none; }
+
+  .reg-grid { grid-template-columns: 1fr; }
+
+  /* Tombol kamera registrasi: wrap di mobile */
+  .reg-cam-btns { flex-wrap: wrap; }
+
+  .cam-controls { gap: 8px; }
+
+  /* Sembunyikan kolom kurang penting di tabel mahasiswa */
+  .hide-mobile { display: none; }
+
+  /* Ukuran stat value lebih kecil */
+  .stat-box-value { font-size: 1.6rem; }
+  .stat-box { padding: 12px 14px; }
+}
+
+@media (max-width: 480px) {
+  .brand-sub { display: none; }
+  .model-badge { padding: 4px 8px; font-size: 0.65rem; }
+  .btn-sm { padding: 5px 10px; font-size: 0.72rem; }
+
+  /* Stats: tetap 2 kolom, padding dikurangi */
+  .stats-row { gap: 10px; }
+
+  /* Tab text lebih kecil */
+  .tab-btn { padding: 12px 14px; font-size: 0.78rem; gap: 5px; }
+}
 </style>
 </head>
 <body>
@@ -222,9 +373,9 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
 
 <div class="nav-tabs">
   <button class="tab-btn active" onclick="showPage('absensi', this)">📷 Absensi</button>
-  <button class="tab-btn" onclick="showPage('registrasi', this)">✏️ Registrasi Mahasiswa</button>
+  <button class="tab-btn" onclick="showPage('registrasi', this)">✏️ Registrasi</button>
   <button class="tab-btn" onclick="showPage('data', this)">📋 Data Mahasiswa</button>
-  <button class="tab-btn" onclick="showPage('rekap', this)">📊 Rekap Kehadiran</button>
+  <button class="tab-btn" onclick="showPage('rekap', this)">📊 Rekap</button>
 </div>
 
 <div class="container">
@@ -272,7 +423,7 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
       <div class="cam-controls">
         <button class="btn btn-primary" id="btnStartAbs" onclick="startAbsCamera()" disabled>▶ Mulai Kamera</button>
         <button class="btn btn-outline" id="btnStopAbs" onclick="stopAbsCamera()" disabled>⏹ Stop</button>
-        <button class="btn btn-outline btn-sm" onclick="clearAttendance()" style="margin-left:auto">🗑 Reset Hari Ini</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAttendance()" style="margin-left:auto">🗑 Reset</button>
       </div>
     </div>
 
@@ -353,7 +504,7 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
           <div class="photo-thumb"><div class="ph-num">4</div></div>
           <div class="photo-thumb"><div class="ph-num">5</div></div>
         </div>
-        <div style="display:flex;gap:10px;margin-top:16px">
+        <div class="reg-cam-btns" style="display:flex;gap:10px;margin-top:16px">
           <button class="btn btn-outline" id="btnRegCam" onclick="startRegCamera()">📷 Buka Kamera</button>
           <button class="btn btn-primary" id="btnCapture" onclick="capturePhoto()" disabled>Ambil Foto</button>
           <button class="btn btn-green" id="btnSave" onclick="saveStudent()" disabled>💾 Simpan</button>
@@ -398,16 +549,24 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
     </div>
   </div>
   <div class="card">
-    <table class="students-table" id="studentsTable">
-      <thead>
-        <tr>
-          <th>No</th><th>Nama</th><th>NIM</th><th>Kelas</th><th>Program Studi</th><th>Foto</th><th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody id="studentsBody">
-        <tr><td colspan="7" class="empty-state">Memuat data...</td></tr>
-      </tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="students-table" id="studentsTable">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama</th>
+            <th>NIM</th>
+            <th>Kelas</th>
+            <th class="hide-mobile">Program Studi</th>
+            <th>Foto</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="studentsBody">
+          <tr><td colspan="7" class="empty-state">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -419,17 +578,26 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
   </div>
   <div class="card">
     <div class="card-header">
-      <span class="card-title">Log Kehadiran Hari Ini — <span id="rekapDate"></span></span>
+      <span class="card-title">Log Kehadiran — <span id="rekapDate"></span></span>
       <span style="font-size:0.75rem;color:var(--ink2)" id="rekapCount">0 entri</span>
     </div>
-    <table class="students-table">
-      <thead>
-        <tr><th>No</th><th>Nama</th><th>NIM</th><th>Kelas</th><th>Waktu Hadir</th><th>Status</th></tr>
-      </thead>
-      <tbody id="rekapBody">
-        <tr><td colspan="6" class="empty-state">Belum ada data kehadiran</td></tr>
-      </tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="students-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama</th>
+            <th>NIM</th>
+            <th class="hide-mobile">Kelas</th>
+            <th>Waktu Hadir</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="rekapBody">
+          <tr><td colspan="6" class="empty-state">Belum ada data kehadiran</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -441,8 +609,8 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
 // STATE — semua dari API, bukan localStorage
 // ═══════════════════════════════════════════
 let modelsLoaded = false;
-let students = [];       // diisi dari GET /api/students
-let attendance = [];     // diisi dari GET /api/attendance?action=today
+let students = [];
+let attendance = [];
 let capturedPhotos = [];
 let regStream = null;
 let absStream = null;
@@ -452,9 +620,8 @@ let lastDetectedId = null;
 let lastDetectedTime = 0;
 const COOLDOWN_MS = 4000;
 
-// Voting buffer — ambil 5 frame, pilih hasil terbanyak
 const VOTE_SIZE = 5;
-let voteBuffer = []; // [{label, distance}]
+let voteBuffer = [];
 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model';
 
 // ═══════════════════════════════════════════
@@ -710,14 +877,12 @@ async function detectLoop() {
   const video = document.getElementById('absVideo');
   const canvas = document.getElementById('absCanvas');
 
-  // Set ukuran canvas sekali saja saat pertama kali
   if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
   }
   const ctx = canvas.getContext('2d');
 
-  // Selalu draw video ke canvas supaya tidak hitam
   ctx.save();
   ctx.scale(-1, 1);
   ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
@@ -734,7 +899,6 @@ async function detectLoop() {
     return;
   }
 
-  // Hapus overlay lama (bukan video), gambar ulang video dulu
   ctx.save();
   ctx.scale(-1, 1);
   ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
@@ -752,11 +916,9 @@ async function detectLoop() {
       const box = det.detection.box;
       const mirroredX = canvas.width - box.x - box.width;
 
-      // ── VOTING: kumpulkan hasil 5 frame, pilih terbanyak ──
       voteBuffer.push({ label: rawMatch.label, distance: rawMatch.distance });
       if (voteBuffer.length > VOTE_SIZE) voteBuffer.shift();
 
-      // Hitung suara terbanyak
       const votes = {};
       const distSum = {};
       for (const v of voteBuffer) {
@@ -767,7 +929,6 @@ async function detectLoop() {
       const winnerDist = distSum[winner] / votes[winner];
       const confidence = votes[winner] / voteBuffer.length;
 
-      // Hanya tampilkan hasil jika menang minimal 3 dari 5 frame
       const isKnown = winner !== 'unknown' && confidence >= 0.6;
       const student = isKnown ? students.find(s => s.id === winner) : null;
       const color = isKnown ? '#16a34a' : '#d97706';
@@ -813,7 +974,7 @@ async function detectLoop() {
       }
     }
   } else {
-    voteBuffer = []; // reset voting kalau tidak ada wajah
+    voteBuffer = [];
     resetDetectedCard();
   }
 
@@ -862,7 +1023,6 @@ async function recordAttendance(student) {
       updateStats();
       renderAttendanceList();
     }
-    // 409 = sudah absen, tidak perlu alert
   } catch(e) { console.error('Gagal catat absensi:', e); }
 }
 
@@ -923,7 +1083,7 @@ async function renderStudentTable() {
       </td>
       <td style="font-family:'DM Mono',monospace;font-size:0.78rem">${s.nim}</td>
       <td><span class="tag">${s.kelas}</span></td>
-      <td style="font-size:0.8rem;color:var(--ink2)">${s.prodi}</td>
+      <td class="hide-mobile" style="font-size:0.8rem;color:var(--ink2)">${s.prodi}</td>
       <td><span class="tag green">${s.descriptors.length} foto</span></td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')">Hapus</button></td>
     </tr>`).join('');
@@ -974,7 +1134,7 @@ async function renderRekap() {
         <td style="color:var(--ink2);font-family:'DM Mono',monospace;font-size:0.75rem">${i+1}</td>
         <td><strong>${a.nama}</strong></td>
         <td style="font-family:'DM Mono',monospace;font-size:0.78rem">${a.nim}</td>
-        <td><span class="tag">${a.kelas}</span></td>
+        <td class="hide-mobile"><span class="tag">${a.kelas}</span></td>
         <td style="font-family:'DM Mono',monospace;font-size:0.78rem">${time}</td>
         <td><span class="tag green">HADIR</span></td>
       </tr>`;
@@ -1047,7 +1207,7 @@ function showAlert(id, type, msg) {
 }
 
 // ═══════════════════════════════════════════
-// INIT — load dari API saat halaman dibuka
+// INIT
 // ═══════════════════════════════════════════
 (async () => {
   await loadStudentsFromAPI();
