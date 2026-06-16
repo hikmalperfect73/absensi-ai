@@ -260,7 +260,7 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
         </div>
       </div>
       <div class="video-wrap" id="absWrap">
-        <video id="absVideo" autoplay muted playsinline style="display:none;transform:scaleX(-1)"></video>
+        <video id="absVideo" autoplay muted playsinline style="display:none"></video>
         <canvas class="overlay" id="absCanvas"></canvas>
         <div class="scan-line" id="scanLine"></div>
         <div class="video-placeholder" id="absPlaceholder">
@@ -705,16 +705,36 @@ async function detectLoop() {
   if (!absDetecting) return;
   const video = document.getElementById('absVideo');
   const canvas = document.getElementById('absCanvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+
+  // Set ukuran canvas sekali saja saat pertama kali
+  if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+  }
   const ctx = canvas.getContext('2d');
 
-  const detections = await faceapi
-    .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 }))
-    .withFaceLandmarks()
-    .withFaceDescriptors();
+  // Selalu draw video ke canvas supaya tidak hitam
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.restore();
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  let detections = [];
+  try {
+    detections = await faceapi
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+  } catch(e) {
+    absAnimFrame = setTimeout(() => requestAnimationFrame(detectLoop), 300);
+    return;
+  }
+
+  // Hapus overlay lama (bukan video), gambar ulang video dulu
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.restore();
 
   if (detections.length > 0 && students.length > 0) {
     const labeledDescriptors = students.map(s => {
