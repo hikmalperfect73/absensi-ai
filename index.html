@@ -382,6 +382,38 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
   .tab-btn { padding: 12px 14px; font-size: 0.78rem; gap: 5px; }
 }
 
+/* ── COOLDOWN BAR ── */
+.cooldown-wrap {
+  margin-top: 10px;
+  display: none;
+}
+.cooldown-wrap.visible { display: block; }
+.cooldown-label {
+  font-size: 0.65rem;
+  font-family: 'DM Mono', monospace;
+  color: var(--ink2);
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+.cooldown-bar-bg {
+  height: 4px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.cooldown-bar-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 999px;
+  transition: width 0.25s linear;
+  width: 100%;
+}
+.status-cooldown {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* ── SWEETALERT2 OVERRIDE ── */
 .swal2-popup {
   font-family: 'DM Sans', sans-serif !important;
@@ -523,6 +555,15 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
         <div class="detected-nim" id="detNIM">NIM: —</div>
         <div class="detected-kelas" id="detKelas">Kelas: —</div>
         <div class="detected-status status-waiting" id="detStatus">Menunggu wajah...</div>
+        <div class="cooldown-wrap" id="cooldownWrap">
+          <div class="cooldown-label">
+            <span>⏱ Cooldown absensi</span>
+            <span id="cooldownSec">8d</span>
+          </div>
+          <div class="cooldown-bar-bg">
+            <div class="cooldown-bar-fill" id="cooldownBar"></div>
+          </div>
+        </div>
       </div>
 
       <div class="card" style="flex:1">
@@ -706,7 +747,9 @@ let absDetecting = false;
 let absAnimFrame = null;
 let lastDetectedId = null;
 let lastDetectedTime = 0;
-const COOLDOWN_MS = 4000;
+const COOLDOWN_MS = 8000;          // 8 detik per mahasiswa
+const cooldownMap = {};            // { student_id: timestamp } — per mahasiswa
+let cooldownTimerInterval = null;  // interval untuk countdown UI
 
 const VOTE_SIZE = 5;
 let voteBuffer = [];
@@ -1094,12 +1137,21 @@ async function detectLoop() {
       ctx.fillText(text, mirroredX + 10, box.y - 12);
 
       if (isKnown) {
-        updateDetectedCard(student, winnerDist);
         const now = Date.now();
-        if (winner !== lastDetectedId || now - lastDetectedTime > COOLDOWN_MS) {
+        const lastTime = cooldownMap[winner] || 0;
+        const elapsed = now - lastTime;
+        const inCooldown = elapsed < COOLDOWN_MS;
+
+        updateDetectedCard(student, winnerDist, inCooldown, elapsed);
+
+        if (!inCooldown) {
+          cooldownMap[winner] = now;
           lastDetectedId = winner;
           lastDetectedTime = now;
           recordAttendance(student);
+          startCooldownUI(student.nama);
+        } else {
+          updateCooldownUI(elapsed);
         }
       } else {
         showUnknown();
@@ -1113,14 +1165,61 @@ async function detectLoop() {
   absAnimFrame = setTimeout(() => requestAnimationFrame(detectLoop), 300);
 }
 
-function updateDetectedCard(student, distance) {
+function updateDetectedCard(student, distance, inCooldown = false, elapsed = 0) {
   document.getElementById('detectedCard').className = 'detected-card found';
   document.getElementById('detName').textContent = student.nama;
   document.getElementById('detNIM').textContent = 'NIM: ' + student.nim;
   document.getElementById('detKelas').textContent = 'Kelas: ' + student.kelas + ' · ' + student.prodi;
   const conf = Math.round((1 - distance) * 100);
-  document.getElementById('detStatus').className = 'detected-status status-hadir';
-  document.getElementById('detStatus').textContent = `✅ HADIR · ${conf}% akurasi`;
+  if (inCooldown) {
+    const sisaDetik = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+    document.getElementById('detStatus').className = 'detected-status status-cooldown';
+    document.getElementById('detStatus').textContent = `✅ Sudah tercatat · ${conf}% · cooldown ${sisaDetik}d`;
+  } else {
+    document.getElementById('detStatus').className = 'detected-status status-hadir';
+    document.getElementById('detStatus').textContent = `✅ HADIR · ${conf}% akurasi`;
+  }
+}
+
+function startCooldownUI(nama) {
+  // Tampilkan bar, mulai countdown
+  const wrap = document.getElementById('cooldownWrap');
+  const bar  = document.getElementById('cooldownBar');
+  const sec  = document.getElementById('cooldownSec');
+  wrap.classList.add('visible');
+  bar.style.width = '100%';
+  bar.style.background = 'var(--green)';
+
+  if (cooldownTimerInterval) clearInterval(cooldownTimerInterval);
+  const start = Date.now();
+  cooldownTimerInterval = setInterval(() => {
+    const elapsed = Date.now() - start;
+    const remaining = Math.max(0, COOLDOWN_MS - elapsed);
+    const pct = (remaining / COOLDOWN_MS) * 100;
+    bar.style.width = pct + '%';
+    // Warna: hijau → kuning → merah
+    if (pct > 60) bar.style.background = 'var(--green)';
+    else if (pct > 30) bar.style.background = 'var(--amber)';
+    else bar.style.background = 'var(--red)';
+    sec.textContent = Math.ceil(remaining / 1000) + 'd';
+    if (remaining <= 0) {
+      clearInterval(cooldownTimerInterval);
+      cooldownTimerInterval = null;
+      wrap.classList.remove('visible');
+    }
+  }, 250);
+}
+
+function updateCooldownUI(elapsed) {
+  // Perbarui bar saat mahasiswa masih di frame selama cooldown
+  const wrap = document.getElementById('cooldownWrap');
+  const bar  = document.getElementById('cooldownBar');
+  const sec  = document.getElementById('cooldownSec');
+  if (!wrap.classList.contains('visible')) return;
+  const remaining = Math.max(0, COOLDOWN_MS - elapsed);
+  const pct = (remaining / COOLDOWN_MS) * 100;
+  bar.style.width = pct + '%';
+  sec.textContent = Math.ceil(remaining / 1000) + 'd';
 }
 
 function showUnknown() {
@@ -1139,6 +1238,7 @@ function resetDetectedCard() {
   document.getElementById('detKelas').textContent = 'Kelas: —';
   document.getElementById('detStatus').className = 'detected-status status-waiting';
   document.getElementById('detStatus').textContent = 'Menunggu wajah...';
+  document.getElementById('cooldownWrap').classList.remove('visible');
 }
 
 // ═══════════════════════════════════════════
@@ -1197,6 +1297,10 @@ async function clearAttendance() {
       await loadAttendanceFromAPI();
       updateStats();
       renderAttendanceList();
+      // Reset juga cooldown map supaya semua bisa absen lagi
+      Object.keys(cooldownMap).forEach(k => delete cooldownMap[k]);
+      if (cooldownTimerInterval) { clearInterval(cooldownTimerInterval); cooldownTimerInterval = null; }
+      document.getElementById('cooldownWrap').classList.remove('visible');
       Swal.fire({ icon: 'success', title: 'Berhasil Direset', text: 'Data kehadiran hari ini telah dihapus.', timer: 2000, timerProgressBar: true, showConfirmButton: false });
     }
   } catch(e) {
