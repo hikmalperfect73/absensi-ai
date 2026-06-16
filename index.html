@@ -96,11 +96,24 @@ header {
   white-space: nowrap;
 }
 
-.model-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); }
+.model-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
 .model-badge .dot.ready { background: var(--green); box-shadow: 0 0 0 2px var(--green-light); }
 .model-badge .dot.loading { background: var(--amber); animation: blink 1s infinite; }
 
+/* Spinner kecil di badge */
+.badge-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--border2);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── NAV TABS: horizontal scroll di mobile ── */
 .nav-tabs {
@@ -173,6 +186,40 @@ canvas.overlay { pointer-events: none; }
 
 .video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #444; font-size: 0.75rem; }
 .video-placeholder .icon { font-size: 3rem; opacity: 0.4; }
+
+/* ── SPINNER OVERLAY DI VIDEO ── */
+.model-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10,10,15,0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 10;
+}
+.model-loading-overlay .big-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255,255,255,0.15);
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.model-loading-overlay .load-text {
+  color: rgba(255,255,255,0.8);
+  font-size: 0.78rem;
+  font-family: 'DM Mono', monospace;
+  text-align: center;
+  line-height: 1.5;
+}
+.model-loading-overlay .load-step {
+  color: rgba(255,255,255,0.45);
+  font-size: 0.68rem;
+  font-family: 'DM Mono', monospace;
+}
+
 .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #2563eb, transparent); animation: scanMove 2.5s ease-in-out infinite; opacity: 0; }
 .scanning .scan-line { opacity: 1; }
 @keyframes scanMove { 0% { top: 10%; } 50% { top: 90%; } 100% { top: 10%; } }
@@ -294,7 +341,6 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
 .photo-thumb:hover .delete-btn { opacity: 1; }
 
 .loading-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ══════════════════════════════════════
    RESPONSIVE BREAKPOINTS
@@ -316,20 +362,13 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
   .nav-tabs { padding: 0 16px; }
   .container { padding: 16px 12px; }
 
-  /* Header right: sembunyikan jam di layar sangat kecil */
   .time-display { display: none; }
 
   .reg-grid { grid-template-columns: 1fr; }
-
-  /* Tombol kamera registrasi: wrap di mobile */
   .reg-cam-btns { flex-wrap: wrap; }
-
   .cam-controls { gap: 8px; }
-
-  /* Sembunyikan kolom kurang penting di tabel mahasiswa */
   .hide-mobile { display: none; }
 
-  /* Ukuran stat value lebih kecil */
   .stat-box-value { font-size: 1.6rem; }
   .stat-box { padding: 12px 14px; }
 }
@@ -338,11 +377,7 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
   .brand-sub { display: none; }
   .model-badge { padding: 4px 8px; font-size: 0.65rem; }
   .btn-sm { padding: 5px 10px; font-size: 0.72rem; }
-
-  /* Stats: tetap 2 kolom, padding dikurangi */
   .stats-row { gap: 10px; }
-
-  /* Tab text lebih kecil */
   .tab-btn { padding: 12px 14px; font-size: 0.78rem; gap: 5px; }
 }
 </style>
@@ -363,11 +398,11 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
       <div id="clockDate"></div>
       <div id="clockTime" style="font-size:1rem;color:var(--ink)"></div>
     </div>
-    <div class="model-badge">
-      <div class="dot" id="modelDot"></div>
-      <span id="modelLabel">Model belum dimuat</span>
+    <!-- Badge: dot diganti spinner saat loading, tidak ada tombol manual -->
+    <div class="model-badge" id="modelBadge">
+      <span class="badge-spinner" id="modelDot"></span>
+      <span id="modelLabel">Memuat model AI...</span>
     </div>
-    <button class="btn btn-outline btn-sm" id="btnLoadModel" onclick="loadModels()">Muat Model</button>
   </div>
 </header>
 
@@ -414,10 +449,19 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
         <video id="absVideo" autoplay muted playsinline style="display:none"></video>
         <canvas class="overlay" id="absCanvas"></canvas>
         <div class="scan-line" id="scanLine"></div>
-        <div class="video-placeholder" id="absPlaceholder">
+
+        <!-- Overlay spinner saat model sedang loading -->
+        <div class="model-loading-overlay" id="modelLoadingOverlay">
+          <div class="big-spinner"></div>
+          <div class="load-text">Memuat Model AI</div>
+          <div class="load-step" id="modelLoadStep">Menginisialisasi...</div>
+        </div>
+
+        <!-- Placeholder setelah model siap -->
+        <div class="video-placeholder" id="absPlaceholder" style="display:none">
           <div class="icon">📷</div>
-          <div>Muat model AI terlebih dahulu</div>
-          <div style="font-size:0.65rem;color:#666;margin-top:4px">lalu klik Mulai Kamera</div>
+          <div>Model siap — klik Mulai Kamera</div>
+          <div style="font-size:0.65rem;color:#666;margin-top:4px">untuk memulai deteksi wajah</div>
         </div>
       </div>
       <div class="cam-controls">
@@ -606,7 +650,7 @@ input:focus, select:focus { border-color: var(--accent); background: #fff; }
 
 <script>
 // ═══════════════════════════════════════════
-// STATE — semua dari API, bukan localStorage
+// STATE
 // ═══════════════════════════════════════════
 let modelsLoaded = false;
 let students = [];
@@ -678,33 +722,66 @@ function showPage(name, btn) {
 }
 
 // ═══════════════════════════════════════════
-// LOAD MODELS
+// LOAD MODELS — otomatis, tanpa tombol manual
 // ═══════════════════════════════════════════
 async function loadModels() {
-  const btn = document.getElementById('btnLoadModel');
-  const dot = document.getElementById('modelDot');
-  const label = document.getElementById('modelLabel');
-  btn.disabled = true;
-  dot.className = 'dot loading';
-  label.textContent = 'Memuat model...';
+  const dot      = document.getElementById('modelDot');
+  const label    = document.getElementById('modelLabel');
+  const overlay  = document.getElementById('modelLoadingOverlay');
+  const stepEl   = document.getElementById('modelLoadStep');
+  const placeholder = document.getElementById('absPlaceholder');
+
+  // Badge: spinner + teks loading
+  dot.className = 'badge-spinner';
+  label.textContent = 'Memuat model AI...';
+
+  // Overlay video: tampilkan spinner besar
+  overlay.style.display = 'flex';
+  placeholder.style.display = 'none';
+
   try {
-    await Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-    ]);
+    stepEl.textContent = 'Memuat TinyFaceDetector...';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+
+    stepEl.textContent = 'Memuat FaceLandmark68...';
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+
+    stepEl.textContent = 'Memuat FaceRecognition...';
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+
+    // Berhasil
     modelsLoaded = true;
+
+    // Badge: dot hijau
     dot.className = 'dot ready';
     label.textContent = 'Model siap';
-    btn.style.display = 'none';
+
+    // Sembunyikan overlay, tampilkan placeholder normal
+    overlay.style.display = 'none';
+    placeholder.style.display = 'flex';
+    placeholder.innerHTML =
+      '<div class="icon">✅</div><div>Model siap — klik Mulai Kamera</div>' +
+      '<div style="font-size:0.65rem;color:#666;margin-top:4px">untuk memulai deteksi wajah</div>';
+
+    // Aktifkan tombol kamera
     document.getElementById('btnStartAbs').disabled = false;
-    document.getElementById('absPlaceholder').innerHTML =
-      '<div class="icon">✅</div><div>Model siap — klik Mulai Kamera</div>';
+
   } catch(e) {
+    // Gagal load model
     dot.className = 'dot';
-    label.textContent = 'Gagal memuat';
-    btn.disabled = false;
-    alert('Gagal memuat model: ' + e.message);
+    dot.style.background = 'var(--red)';
+    label.textContent = 'Gagal memuat model';
+
+    overlay.innerHTML = `
+      <div style="font-size:2rem">⚠️</div>
+      <div class="load-text" style="color:#fca5a5">Gagal memuat Model AI</div>
+      <div class="load-step" style="color:rgba(255,255,255,0.5);margin-bottom:8px">${e.message}</div>
+      <button class="btn btn-outline btn-sm" onclick="loadModels()"
+        style="border-color:rgba(255,255,255,0.3);color:#fff;font-size:0.75rem">
+        🔄 Coba Lagi
+      </button>`;
+
+    console.error('Gagal memuat model:', e);
   }
 }
 
@@ -722,7 +799,7 @@ async function startRegCamera() {
 }
 
 async function capturePhoto() {
-  if (!modelsLoaded) { alert('Muat model AI terlebih dahulu!'); return; }
+  if (!modelsLoaded) { alert('Model AI belum siap, tunggu sebentar!'); return; }
   if (capturedPhotos.length >= 5) return;
 
   const video = document.getElementById('regVideo');
@@ -836,7 +913,7 @@ function resetRegForm() {
 // ABSENSI KAMERA
 // ═══════════════════════════════════════════
 async function startAbsCamera() {
-  if (!modelsLoaded) { alert('Muat model terlebih dahulu!'); return; }
+  if (!modelsLoaded) { alert('Model AI belum siap!'); return; }
   try {
     absStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
     const video = document.getElementById('absVideo');
@@ -861,8 +938,9 @@ function stopAbsCamera() {
   const video = document.getElementById('absVideo');
   video.srcObject = null;
   video.style.display = 'none';
-  document.getElementById('absPlaceholder').style.display = 'flex';
-  document.getElementById('absPlaceholder').innerHTML = '<div class="icon">📷</div><div>Kamera dihentikan</div>';
+  const placeholder = document.getElementById('absPlaceholder');
+  placeholder.style.display = 'flex';
+  placeholder.innerHTML = '<div class="icon">📷</div><div>Kamera dihentikan</div>';
   document.getElementById('absWrap').classList.remove('scanning');
   document.getElementById('btnStartAbs').disabled = false;
   document.getElementById('btnStopAbs').disabled = true;
@@ -1207,13 +1285,32 @@ function showAlert(id, type, msg) {
 }
 
 // ═══════════════════════════════════════════
-// INIT
+// INIT — auto-load model tanpa tombol manual
 // ═══════════════════════════════════════════
 (async () => {
-  await loadStudentsFromAPI();
-  await loadAttendanceFromAPI();
+  // Jalankan load data dan load model secara paralel
+  await Promise.all([
+    loadStudentsFromAPI(),
+    loadAttendanceFromAPI()
+  ]);
   updateStats();
   renderAttendanceList();
+
+  // Tunggu face-api.js selesai di-defer, lalu load model otomatis
+  // face-api.js pakai defer, jadi tunggu DOMContentLoaded + small tick
+  if (typeof faceapi !== 'undefined') {
+    loadModels();
+  } else {
+    // Fallback: tunggu script selesai load
+    document.querySelector('script[src*="face-api"]').addEventListener('load', loadModels);
+    // Atau pakai polling jika event 'load' sudah lewat
+    const poll = setInterval(() => {
+      if (typeof faceapi !== 'undefined') {
+        clearInterval(poll);
+        loadModels();
+      }
+    }, 100);
+  }
 })();
 </script>
 </body>
