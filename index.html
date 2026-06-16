@@ -667,7 +667,7 @@ function resetRegForm() {
 async function startAbsCamera() {
   if (!modelsLoaded) { alert('Muat model terlebih dahulu!'); return; }
   try {
-    absStream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720, facingMode: 'user' } });
+    absStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
     const video = document.getElementById('absVideo');
     video.srcObject = absStream;
     video.style.display = 'block';
@@ -710,7 +710,7 @@ async function detectLoop() {
   const ctx = canvas.getContext('2d');
 
   const detections = await faceapi
-    .detectAllFaces(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+    .detectAllFaces(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.6 }))
     .withFaceLandmarks()
     .withFaceDescriptors();
 
@@ -774,7 +774,7 @@ async function detectLoop() {
     resetDetectedCard();
   }
 
-  absAnimFrame = requestAnimationFrame(detectLoop);
+  absAnimFrame = setTimeout(() => requestAnimationFrame(detectLoop), 300);
 }
 
 function updateDetectedCard(student, distance) {
