@@ -451,6 +451,10 @@ let absAnimFrame = null;
 let lastDetectedId = null;
 let lastDetectedTime = 0;
 const COOLDOWN_MS = 4000;
+
+// Voting buffer — ambil 5 frame, pilih hasil terbanyak
+const VOTE_SIZE = 5;
+let voteBuffer = []; // [{label, distance}]
 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model';
 
 // ═══════════════════════════════════════════
@@ -744,11 +748,28 @@ async function detectLoop() {
     const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
 
     for (const det of detections) {
-      const match = matcher.findBestMatch(det.descriptor);
+      const rawMatch = matcher.findBestMatch(det.descriptor);
       const box = det.detection.box;
       const mirroredX = canvas.width - box.x - box.width;
-      const isKnown = match.label !== 'unknown';
-      const student = isKnown ? students.find(s => s.id === match.label) : null;
+
+      // ── VOTING: kumpulkan hasil 5 frame, pilih terbanyak ──
+      voteBuffer.push({ label: rawMatch.label, distance: rawMatch.distance });
+      if (voteBuffer.length > VOTE_SIZE) voteBuffer.shift();
+
+      // Hitung suara terbanyak
+      const votes = {};
+      const distSum = {};
+      for (const v of voteBuffer) {
+        votes[v.label] = (votes[v.label] || 0) + 1;
+        distSum[v.label] = (distSum[v.label] || 0) + v.distance;
+      }
+      const winner = Object.keys(votes).reduce((a, b) => votes[a] >= votes[b] ? a : b);
+      const winnerDist = distSum[winner] / votes[winner];
+      const confidence = votes[winner] / voteBuffer.length;
+
+      // Hanya tampilkan hasil jika menang minimal 3 dari 5 frame
+      const isKnown = winner !== 'unknown' && confidence >= 0.6;
+      const student = isKnown ? students.find(s => s.id === winner) : null;
       const color = isKnown ? '#16a34a' : '#d97706';
 
       ctx.strokeStyle = color;
@@ -770,7 +791,8 @@ async function detectLoop() {
           ctx.stroke();
         });
 
-      const text = isKnown ? `${student.nama} · ${student.nim}` : 'Tidak Dikenal';
+      const confPct = Math.round((1 - winnerDist) * 100);
+      const text = isKnown ? `${student.nama} · ${confPct}%` : 'Tidak Dikenal';
       ctx.font = '600 13px DM Sans, sans-serif';
       const tw = ctx.measureText(text).width;
       ctx.fillStyle = color + 'cc';
@@ -779,10 +801,10 @@ async function detectLoop() {
       ctx.fillText(text, mirroredX + 10, box.y - 12);
 
       if (isKnown) {
-        updateDetectedCard(student, match.distance);
+        updateDetectedCard(student, winnerDist);
         const now = Date.now();
-        if (match.label !== lastDetectedId || now - lastDetectedTime > COOLDOWN_MS) {
-          lastDetectedId = match.label;
+        if (winner !== lastDetectedId || now - lastDetectedTime > COOLDOWN_MS) {
+          lastDetectedId = winner;
           lastDetectedTime = now;
           recordAttendance(student);
         }
@@ -791,6 +813,7 @@ async function detectLoop() {
       }
     }
   } else {
+    voteBuffer = []; // reset voting kalau tidak ada wajah
     resetDetectedCard();
   }
 
