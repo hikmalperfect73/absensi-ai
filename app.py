@@ -3,6 +3,7 @@ from flask import Flask, send_from_directory
 from flask_cors import CORS
 from api.students import students_bp
 from api.attendance import attendance_bp
+from api.export import export_bp
 import os
 
 app = Flask(__name__, static_folder='static')
@@ -10,6 +11,7 @@ CORS(app)
 
 app.register_blueprint(students_bp,   url_prefix='/api/students')
 app.register_blueprint(attendance_bp, url_prefix='/api/attendance')
+app.register_blueprint(export_bp,     url_prefix='/api/export')
 
 @app.route('/')
 def index():
